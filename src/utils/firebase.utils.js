@@ -1,10 +1,11 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { 
+import {    
     getAuth,
     GoogleAuthProvider, 
     signInWithPopup,
     signInWithRedirect,
+    createUserWithEmailAndPassword
 } from "firebase/auth";
 // GoogleAuthProvider,  // Authenticate Using Google
 
@@ -34,21 +35,24 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({
+const googleProvider = new GoogleAuthProvider();  // in case I want create with FB, I would need to create another provider - FBProvider for example.
+googleProvider.setCustomParameters({
     prompt: "select_account"
     // 'login_hint': 'user@example.com'  // from documentation
   });
-  // when someone interacts with provider, we want to force select account
+  // when someone interacts with googleProvider, we want to force select account
 
   // Authentification methods
   export const auth = getAuth();
-  export const signInWithGooglePopup = () => signInWithPopup(auth, provider);
+  export const signInWithGooglePopup = () => signInWithPopup(auth, googleProvider);
+
+    // Authentification method with REDIRECT
+  export const signInWithGoogleRedirect = () => signInWithRedirect(auth, googleProvider);
 
   // DB Storage methods
   export const db = getFirestore(); 
   
-  export const createUserDocumentFromAuth = async (userAuth) => {
+  export const createUserDocumentFromAuth = async (userAuth, additionalInformation = {}) => {
     // see if exists the wanted doc reference
  
     const userDocRef = doc(db, 'users', userAuth.uid);  // use unique identifier (uid)
@@ -68,7 +72,8 @@ provider.setCustomParameters({
         await setDoc(userDocRef, {
           displayName,
           email,
-          createdAt
+          createdAt,
+          ...additionalInformation // this is coming from email password login cases
         });
     } catch (error){
       console.log('error creating the user', error.message);
@@ -77,3 +82,8 @@ provider.setCustomParameters({
   return userDocRef;
 
   }
+
+  export const createAuthUserWithEmailAndPassword = async (email, password) => {
+    if (!email || !password) return;
+    return await createUserWithEmailAndPassword(auth, email, password);
+  };
